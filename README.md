@@ -43,6 +43,7 @@ Deploy to AWS:
 
 ```bash
 agentcore deploy
+# step through interactive prompt
 ```
 
 ## Commands
@@ -85,6 +86,13 @@ The project uses a **flat resource model** — agents, memories, credentials, ga
 | Evaluator | Custom LLM-as-a-Judge or code-based evaluation |
 | Online Eval Config | Continuous evaluation pipeline for deployed agents |
 | Policy | Cedar authorization policies for gateway tools |
+
+### LiteLLM
+LiteLLM key and URL are set in the agent's .env file. Set:
+```
+LITELLM_API_KEY=sk-key
+LITELLM_BASE_URL=https://vts.litellm-prod.ai
+```
 
 ### Agent Types
 
