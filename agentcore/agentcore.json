@@ -7,7 +7,17 @@
     "agentcore:created-by": "agentcore-cli",
     "agentcore:project-name": "TrevorAgentcoreShowcase"
   },
-  "runtimes": [],
+  "runtimes": [
+    {
+      "name": "SqlAssistant",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/SqlAssistant/",
+      "runtimeVersion": "PYTHON_3_14",
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP"
+    }
+  ],
   "memories": [],
   "knowledgeBases": [],
   "credentials": [],
