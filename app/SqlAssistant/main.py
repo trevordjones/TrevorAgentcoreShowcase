@@ -2,6 +2,9 @@ from typing import Any
 from collections import OrderedDict
 from strands import Agent, tool
 import asyncio
+from dotenv import load_dotenv
+load_dotenv()
+import sqlglot
 from strands.agent.conversation_manager.null_conversation_manager import NullConversationManager
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from model.load import load_model
@@ -14,8 +17,13 @@ log = app.logger
 mcp_clients = [get_streamable_http_mcp_client()]
 
 DEFAULT_SYSTEM_PROMPT = """
-You are a helpful assistant. Use tools when appropriate.
+You are a senior data analyst assistant that helps users write, understand, and validate SQL queries.
 
+Guidelines:
+- Always validate SQL before returning it to the user.
+- Prefer explicit column names over SELECT *.
+- Write ANSI SQL unless the user specifies a dialect (e.g., BigQuery, Postgres, Snowflake).
+- Use your tools sequentially: validate, then format, then explain.
 """
 
 
@@ -24,12 +32,33 @@ tools = []
 
 _INLINE_FUNCTION_NAMES = set()
 
-# Define a simple function tool
+
 @tool
-def add_numbers(a: int, b: int) -> int:
-    """Return the sum of two numbers"""
-    return a+b
-tools.append(add_numbers)
+def format_sql(sql: str) -> str:
+    """Prettify a SQL string with consistent casing and indentation."""
+    return sqlglot.transpile(sql, pretty=True)[0]
+
+
+@tool
+def validate_sql(sql: str, dialect: str = "") -> dict:
+    """Validate SQL syntax. Returns a dict with 'valid' (bool) and 'errors' (list of strings)."""
+    try:
+        errors = sqlglot.parse(sql, dialect=dialect or None, error_level=sqlglot.ErrorLevel.RAISE)
+        return {"valid": True, "errors": []}
+    except sqlglot.errors.SqlglotError as e:
+        return {"valid": False, "errors": [str(e)]}
+
+
+@tool
+def explain_query(sql: str) -> str:
+    """Return a plain-English description of what the SQL query does."""
+    # The agent reasons over the query using its own LLM capability.
+    # This tool acts as a signal for the agent to produce an explanation;
+    # the agent will call this tool and then generate the explanation in its response.
+    return f"Please explain the following SQL query in plain English:\n\n{sql}"
+
+
+tools.extend([format_sql, validate_sql, explain_query])
 
 
 

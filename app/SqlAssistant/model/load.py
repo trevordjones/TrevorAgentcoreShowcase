@@ -1,6 +1,13 @@
-from strands.models.bedrock import BedrockModel
+import os
+from strands.models.litellm import LiteLLMModel
 
 
-def load_model() -> BedrockModel:
-    """Get Bedrock model client using IAM credentials."""
-    return BedrockModel(model_id="global.anthropic.claude-sonnet-4-5-20250929-v1:0")
+def load_model() -> LiteLLMModel:
+    """Get LiteLLM model client using LITELLM_API_KEY from environment."""
+    return LiteLLMModel(
+        client_args={
+            "api_key": os.environ["LITELLM_API_KEY"],
+            "base_url": os.environ.get("LITELLM_BASE_URL"),
+        },
+        model_id="openai/gpt-4o-mini",
+    )
