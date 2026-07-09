@@ -16,6 +16,15 @@
       "runtimeVersion": "PYTHON_3_14",
       "networkMode": "PUBLIC",
       "protocol": "HTTP"
+    },
+    {
+      "name": "SchemaAssistant",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/SchemaAssistant/",
+      "runtimeVersion": "PYTHON_3_14",
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP"
     }
   ],
   "memories": [],

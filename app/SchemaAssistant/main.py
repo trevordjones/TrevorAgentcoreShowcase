@@ -1,7 +1,5 @@
-from typing import Any
 from collections import OrderedDict
 from strands import Agent, tool
-import asyncio
 from dotenv import load_dotenv
 load_dotenv()
 from strands.agent.conversation_manager.null_conversation_manager import NullConversationManager
@@ -13,8 +11,6 @@ from shared.sql_tools import validate_sql, format_sql
 app = BedrockAgentCoreApp()
 log = app.logger
 
-# MCP clients are initialized lazily on first agent creation to avoid
-# blocking the runtime startup health check with a network call.
 _mcp_clients = None
 
 def _get_mcp_clients():
@@ -24,39 +20,45 @@ def _get_mcp_clients():
     return _mcp_clients
 
 DEFAULT_SYSTEM_PROMPT = """
-You are a senior data analyst assistant that helps users write, understand, and validate SQL queries.
+You are a senior database architect assistant that helps users design, generate, and document SQL schemas.
 
 Guidelines:
-- Always validate SQL before returning it to the user.
-- Prefer explicit column names over SELECT *.
+- Always validate DDL before returning it to the user.
+- Use explicit NOT NULL constraints and appropriate data types.
 - Write ANSI SQL unless the user specifies a dialect (e.g., BigQuery, Postgres, Snowflake).
-- Use your tools sequentially: validate, then format, then explain.
+- Use your tools sequentially: generate or describe, then validate, then format.
 """
 
-
-# Define a collection of tools used by the model
 tools = []
 
 _INLINE_FUNCTION_NAMES = set()
 
 
 @tool
-def explain_query(sql: str) -> str:
-    """Return a plain-English description of what the SQL query does."""
-    return f"Please explain the following SQL query in plain English:\n\n{sql}"
+def generate_create_table(description: str) -> str:
+    """Signal the agent to generate a CREATE TABLE DDL statement from a plain-English description."""
+    return f"Generate a CREATE TABLE DDL statement for the following entity:\n\n{description}"
 
 
-tools.extend([validate_sql, format_sql, explain_query])
+@tool
+def suggest_indexes(schema_ddl: str, query: str) -> str:
+    """Signal the agent to suggest indexes given a schema DDL and a slow query."""
+    return f"Given this schema:\n\n{schema_ddl}\n\nAnd this query:\n\n{query}\n\nSuggest appropriate CREATE INDEX statements with reasoning."
+
+
+@tool
+def describe_schema(ddl: str) -> str:
+    """Signal the agent to describe a schema DDL in plain English."""
+    return f"Describe the following SQL schema in plain English, covering tables, columns, and relationships:\n\n{ddl}"
+
+
+tools.extend([validate_sql, format_sql, generate_create_table, suggest_indexes, describe_schema])
 
 
 def _make_conversation_manager():
     return NullConversationManager()
 
-# Reuses one Agent per session_id so each session keeps its own in-process
-# conversation history (best-effort; resets on cold start). The cache is bounded
-# to 128 sessions with LRU eviction (least-recently-used is dropped and its
-# history reset) so a single process serving many sessions cannot leak history
-# between them or grow without limit. For durable history, attach a session manager.
+
 def agent_factory():
     cache = OrderedDict()
     def get_or_create_agent(session_id):
@@ -74,8 +76,7 @@ def agent_factory():
             system_prompt=DEFAULT_SYSTEM_PROMPT,
             tools=agent_tools,
             conversation_manager=_make_conversation_manager(),
-            hooks=[
-            ],
+            hooks=[],
         )
         return cache[session_id]
     return get_or_create_agent
@@ -96,7 +97,6 @@ def _extract_prompt(payload: dict):
 
 
 def _has_inline_function_call(messages) -> bool:
-    """Return True if messages contains an assistant toolUse for an inline function tool."""
     if not _INLINE_FUNCTION_NAMES or not isinstance(messages, list):
         return False
     for msg in messages:
@@ -108,7 +108,6 @@ def _has_inline_function_call(messages) -> bool:
 
 
 def _is_inline_function_call(event: dict) -> bool:
-    """Check if a contentBlockStart event is for an inline function tool."""
     if not _INLINE_FUNCTION_NAMES:
         return False
     cbs = event.get("contentBlockStart", {})
@@ -117,21 +116,16 @@ def _is_inline_function_call(event: dict) -> bool:
     return tool_use is not None and tool_use.get("name") in _INLINE_FUNCTION_NAMES
 
 
-
 @app.entrypoint
 async def invoke(payload, context):
     log.info("Invoking Agent.....")
-
 
     session_id = getattr(context, 'session_id', 'default-session')
     agent = get_or_create_agent(session_id)
 
     prompt = _extract_prompt(payload)
 
-
-    async for event in agent.stream_async(
-        prompt,
-    ):
+    async for event in agent.stream_async(prompt):
         if not isinstance(event, dict) or "event" not in event:
             continue
         cbs = event["event"].get("contentBlockStart")
