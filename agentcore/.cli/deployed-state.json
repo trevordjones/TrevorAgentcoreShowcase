@@ -1,3 +1,28 @@
 {
-  "targets": {}
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "SqlAssistant": {
+            "runtimeId": "TrevorShowcase_SqlAssistant-6YLM6JBZ3O",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-2:580776257674:runtime/TrevorShowcase_SqlAssistant-6YLM6JBZ3O",
+            "roleArn": "arn:aws:iam::580776257674:role/AgentCore-TrevorShowcase--ApplicationAgentSqlAssist-ZwymjDXXRdjQ"
+          }
+        },
+        "harnesses": {
+          "TrevorAgentcoreShowcase": {
+            "harnessId": "TrevorShowcase_TrevorAgentcoreShowcase-KthfJlwZ8k",
+            "harnessArn": "arn:aws:bedrock-agentcore:us-east-2:580776257674:harness/TrevorShowcase_TrevorAgentcoreShowcase-KthfJlwZ8k",
+            "roleArn": "arn:aws:iam::580776257674:role/TrevorShowcase_TrevorAgentcoreShowcase",
+            "status": "READY",
+            "harnessVersion": 1,
+            "agentRuntimeArn": "arn:aws:bedrock-agentcore:us-east-2:580776257674:runtime/harness_TrevorShowcase_TrevorAgentcoreShowcase-voLZXwBVT8",
+            "provisioner": "cloudformation"
+          }
+        },
+        "stackName": "AgentCore-TrevorShowcase-default",
+        "deployHash": "b125c19f74b502bf"
+      }
+    }
+  }
 }

@@ -13,8 +13,15 @@ from mcp_client.client import get_streamable_http_mcp_client
 app = BedrockAgentCoreApp()
 log = app.logger
 
-# Define a Streamable HTTP MCP Client
-mcp_clients = [get_streamable_http_mcp_client()]
+# MCP clients are initialized lazily on first agent creation to avoid
+# blocking the runtime startup health check with a network call.
+_mcp_clients = None
+
+def _get_mcp_clients():
+    global _mcp_clients
+    if _mcp_clients is None:
+        _mcp_clients = [get_streamable_http_mcp_client()]
+    return _mcp_clients
 
 DEFAULT_SYSTEM_PROMPT = """
 You are a senior data analyst assistant that helps users write, understand, and validate SQL queries.
@@ -61,13 +68,6 @@ def explain_query(sql: str) -> str:
 tools.extend([format_sql, validate_sql, explain_query])
 
 
-
-# Add MCP client to tools if available
-for mcp_client in mcp_clients:
-    if mcp_client:
-        tools.append(mcp_client)
-
-
 def _make_conversation_manager():
     return NullConversationManager()
 
@@ -84,10 +84,14 @@ def agent_factory():
             return cache[session_id]
         if len(cache) >= 128:
             cache.popitem(last=False)
+        agent_tools = list(tools)
+        for mcp_client in _get_mcp_clients():
+            if mcp_client:
+                agent_tools.append(mcp_client)
         cache[session_id] = Agent(
             model=load_model(),
             system_prompt=DEFAULT_SYSTEM_PROMPT,
-            tools=tools,
+            tools=agent_tools,
             conversation_manager=_make_conversation_manager(),
             hooks=[
             ],
