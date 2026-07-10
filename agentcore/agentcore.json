@@ -15,7 +15,13 @@
       "codeLocation": "app/SqlAssistant/",
       "runtimeVersion": "PYTHON_3_14",
       "networkMode": "PUBLIC",
-      "protocol": "HTTP"
+      "protocol": "HTTP",
+      "envVars": [
+        {
+          "name": "LITELLM_SECRET_ARN",
+          "value": "arn:aws:secretsmanager:us-east-2:580776257674:secret:TrevorShowcase/SqlAssistant/litellm"
+        }
+      ]
     },
     {
       "name": "SchemaAssistant",
@@ -24,7 +30,13 @@
       "codeLocation": "app/SchemaAssistant/",
       "runtimeVersion": "PYTHON_3_14",
       "networkMode": "PUBLIC",
-      "protocol": "HTTP"
+      "protocol": "HTTP",
+      "envVars": [
+        {
+          "name": "LITELLM_SECRET_ARN",
+          "value": "arn:aws:secretsmanager:us-east-2:580776257674:secret:TrevorShowcase/SqlAssistant/litellm"
+        }
+      ]
     }
   ],
   "memories": [],

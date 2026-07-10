@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: agentcore/secrets/.*\.enc\.ya?ml$
+    kms: 'arn:aws:kms:us-east-2:580776257674:key/beac726e-bd4a-4857-863d-b9e0119d25d2'

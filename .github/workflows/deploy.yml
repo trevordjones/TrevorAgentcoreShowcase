@@ -1,0 +1,86 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # required for OIDC auth to AWS
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install SOPS
+        run: |
+          curl -LO https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64
+          install -m 755 sops-v3.9.4.linux.amd64 /usr/local/bin/sops
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Run SqlAssistant tests
+        working-directory: app/SqlAssistant
+        run: uv run pytest tests/ -v
+
+      - name: Run SchemaAssistant tests
+        working-directory: app/SchemaAssistant
+        run: uv run pytest tests/ -v
+
+      - name: Sync secrets to AWS Secrets Manager
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          sops -d --output-type json agentcore/secrets/litellm.enc.yaml | \
+            aws secretsmanager put-secret-value \
+              --secret-id "TrevorShowcase/SqlAssistant/litellm" \
+              --secret-string file:///dev/stdin \
+              --region us-east-2 || \
+            aws secretsmanager create-secret \
+              --name "TrevorShowcase/SqlAssistant/litellm" \
+              --secret-string "$(sops -d --output-type json agentcore/secrets/litellm.enc.yaml)" \
+              --region us-east-2
+
+      - name: Deploy to dev
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          npm install -g @aws/agentcore-cli
+          agentcore deploy --env default --yes
+
+  promote-to-staging:
+    runs-on: ubuntu-latest
+    needs: test-and-deploy
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write
+      contents: read
+    environment: staging  # requires manual approval in GitHub repo settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STG }}
+          aws-region: us-east-2
+
+      - name: Deploy to staging
+        run: |
+          npm install -g @aws/agentcore-cli
+          agentcore deploy --env stg --yes

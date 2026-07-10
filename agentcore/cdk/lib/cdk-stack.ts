@@ -113,6 +113,19 @@ export class AgentCoreStack extends Stack {
     }
     this.application = new AgentCoreApplication(this, 'Application', appProps as any);
 
+    // Grant SchemaAssistant access to the shared LiteLLM secret
+    const schemaEnv = this.application.environments.get('SchemaAssistant');
+    if (schemaEnv) {
+      schemaEnv.runtime.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [
+            'arn:aws:secretsmanager:us-east-2:580776257674:secret:TrevorShowcase/SqlAssistant/litellm*',
+          ],
+        })
+      );
+    }
+
     // Grant SqlAssistant read access to S3 for fetching schema data
     const sqlEnv = this.application.environments.get('SqlAssistant');
     if (sqlEnv) {
@@ -122,6 +135,14 @@ export class AgentCoreStack extends Stack {
           resources: [
             'arn:aws:s3:::lease-extraction-eval-syed',
             'arn:aws:s3:::lease-extraction-eval-syed/*',
+          ],
+        })
+      );
+      sqlEnv.runtime.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [
+            'arn:aws:secretsmanager:us-east-2:580776257674:secret:TrevorShowcase/SqlAssistant/litellm*',
           ],
         })
       );
