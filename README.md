@@ -74,6 +74,13 @@ Edit the JSON files in `agentcore/` to configure your project. See `agentcore/.l
 
 The project uses a **flat resource model** — agents, memories, credentials, gateways, evaluators, and policies are top-level arrays in `agentcore.json`. Resources are independent; agents discover memories and credentials at runtime via environment variables or SDK calls.
 
+## Test suite
+Each agent has its own tests. To run them:
+```
+cd app/SqlAssistant
+uv run pytest tests/ -v 
+```
+
 ## Resources
 
 | Resource | Purpose |
@@ -110,3 +117,4 @@ LITELLM_BASE_URL=https://vts.litellm-prod.ai
 - [AgentCore CLI](https://github.com/aws/agentcore-cli)
 - [AgentCore CDK Constructs](https://github.com/aws/agentcore-l3-cdk-constructs)
 - [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/)
+
