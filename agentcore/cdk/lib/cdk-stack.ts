@@ -113,6 +113,20 @@ export class AgentCoreStack extends Stack {
     }
     this.application = new AgentCoreApplication(this, 'Application', appProps as any);
 
+    // Grant SqlAssistant read access to S3 for fetching schema data
+    const sqlEnv = this.application.environments.get('SqlAssistant');
+    if (sqlEnv) {
+      sqlEnv.runtime.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: ['s3:GetObject', 's3:ListBucket'],
+          resources: [
+            'arn:aws:s3:::lease-extraction-eval-syed',
+            'arn:aws:s3:::lease-extraction-eval-syed/*',
+          ],
+        })
+      );
+    }
+
     // Create AgentCoreMcp if there are gateways configured
     if (mcpSpec?.agentCoreGateways && mcpSpec.agentCoreGateways.length > 0) {
       new AgentCoreMcp(this, 'Mcp', {
