@@ -92,6 +92,10 @@ jobs:
         working-directory: agentcore/cdk
         run: npm ci
 
+      - name: Build CDK project
+        working-directory: agentcore/cdk
+        run: npm run build
+
       - name: Install agentcore CLI
         run: npm install -g @aws/agentcore
 
