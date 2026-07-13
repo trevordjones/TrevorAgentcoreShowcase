@@ -96,6 +96,10 @@ jobs:
         working-directory: agentcore/cdk
         run: npm run build
 
+      - name: Test CDK synth (debug)
+        working-directory: agentcore/cdk
+        run: node dist/bin/cdk.js 2>&1 || true
+
       - name: Install agentcore CLI
         run: npm install -g @aws/agentcore
 
