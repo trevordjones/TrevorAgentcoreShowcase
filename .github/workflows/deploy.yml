@@ -47,7 +47,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install SOPS
         run: |
@@ -97,10 +97,21 @@ jobs:
         run: npm run build
 
       - name: Install agentcore CLI
-        run: npm install -g @aws/agentcore
+        run: npm install -g @aws/agentcore@0.22.0
 
       - name: Deploy both agents to dev
         run: agentcore deploy --target default --yes --verbose
+
+      - name: Debug CDK synth on failure
+        if: failure()
+        working-directory: agentcore/cdk
+        run: |
+          echo "=== Node version ==="
+          node --version
+          echo "=== @aws/agentcore-cdk version ==="
+          node -e "console.log(require('@aws/agentcore-cdk/package.json').version)"
+          echo "=== Running CDK app directly ==="
+          node dist/bin/cdk.js 2>&1 || true
 
       - name: Dump deploy log on failure
         if: failure()
@@ -122,7 +133,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -131,7 +142,7 @@ jobs:
           aws-region: us-east-2
 
       - name: Install agentcore CLI
-        run: npm install -g @aws/agentcore
+        run: npm install -g @aws/agentcore@0.22.0
 
       - name: Deploy both agents to staging
         run: agentcore deploy --target default --yes
