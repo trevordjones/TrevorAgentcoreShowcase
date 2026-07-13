@@ -49,6 +49,8 @@ jobs:
         with:
           node-version: "20"
 
+      - uses: astral-sh/setup-uv@v4
+
       - name: Install SOPS
         run: |
           curl -fsSL -o sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64
@@ -100,22 +102,7 @@ jobs:
         run: npm install -g @aws/agentcore@0.22.0
 
       - name: Deploy both agents to dev
-        run: agentcore deploy --target default --yes --verbose
-
-      - name: Debug CDK synth on failure
-        if: failure()
-        working-directory: agentcore/cdk
-        run: |
-          echo "=== Node version ==="
-          node --version
-          echo "=== @aws/agentcore-cdk version ==="
-          cat node_modules/@aws/agentcore-cdk/package.json | grep '"version"'
-          echo "=== Running CDK app directly ==="
-          node dist/bin/cdk.js 2>&1 || true
-
-      - name: Dump deploy log on failure
-        if: failure()
-        run: cat agentcore/.cli/logs/deploy/deploy-*.log 2>/dev/null || echo "No deploy logs found"
+        run: agentcore deploy --target default --yes
 
   # ── 3. Promote to staging (git tag only) ─────────────────────────────────
   promote-to-staging:
