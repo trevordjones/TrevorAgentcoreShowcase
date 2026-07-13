@@ -88,6 +88,10 @@ jobs:
             echo "Created new secret: $SECRET_ID"
           fi
 
+      - name: Install CDK dependencies
+        working-directory: agentcore/cdk
+        run: npm ci
+
       - name: Install agentcore CLI
         run: npm install -g @aws/agentcore
 
