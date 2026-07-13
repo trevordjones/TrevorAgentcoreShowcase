@@ -100,7 +100,11 @@ jobs:
         run: npm install -g @aws/agentcore
 
       - name: Deploy both agents to dev
-        run: agentcore deploy --target default --yes
+        run: agentcore deploy --target default --yes --verbose
+
+      - name: Dump deploy log on failure
+        if: failure()
+        run: cat agentcore/.cli/logs/deploy/deploy-*.log 2>/dev/null || echo "No deploy logs found"
 
   # ── 3. Promote to staging (git tag only) ─────────────────────────────────
   promote-to-staging:
