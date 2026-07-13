@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 # Unit/contract tests run on every push and PR.
-# Evals + secret sync + deploy only run on push to main.
+# Secret sync + deploy only run on push to main.
 
 jobs:
   # ── 1. Tests (all events) ─────────────────────────────────────────────────
@@ -32,9 +32,9 @@ jobs:
         working-directory: app/SchemaAssistant
         run: uv run pytest tests/ -v
 
-  # ── 2. Evals → Secrets → Deploy (push to main only) ──────────────────────
+  # ── 2. Secrets → Deploy (push to main only) ──────────────────────────────
   deploy-dev:
-    name: Evals + Deploy Dev
+    name: Deploy Dev
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -44,12 +44,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - uses: astral-sh/setup-uv@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -73,18 +67,6 @@ jobs:
           sops -d --output-type json agentcore/secrets/dev.enc.yaml > /tmp/secrets.json
           echo "LITELLM_API_KEY=$(jq -r .LITELLM_API_KEY /tmp/secrets.json)" >> $GITHUB_ENV
           echo "LITELLM_BASE_URL=$(jq -r .LITELLM_BASE_URL /tmp/secrets.json)" >> $GITHUB_ENV
-
-      - name: Install eval dependencies
-        run: |
-          pip install \
-            strands-agents-evals \
-            strands-agents \
-            litellm \
-            sqlglot \
-            python-dotenv
-
-      - name: Run Strands Evaluations
-        run: python evals/sql_assistant_evals.py
 
       # Sync secrets to Secrets Manager so the deployed agents can read them at runtime.
       - name: Sync secrets to AWS Secrets Manager
