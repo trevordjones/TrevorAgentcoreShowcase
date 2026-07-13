@@ -48,12 +48,7 @@
   "policyEngines": [],
   "configBundles": [],
   "abTests": [],
-  "harnesses": [
-    {
-      "name": "TrevorAgentcoreShowcase",
-      "path": "app/TrevorAgentcoreShowcase"
-    }
-  ],
+  "harnesses": [],
   "datasets": [],
   "payments": []
 }
